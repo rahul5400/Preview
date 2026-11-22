@@ -41,12 +41,22 @@ app.get("/", (_req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
+const allow = new Set([
+  "www.example.edu"
+])
+
 app.post("/preview", async (req, res) => {
+  const validURLPattern = /^https?:\/\//;
   const url = String(req.body.url || "").trim();
-  if (!url) {
+  if (!url || !validURLPattern.test(url)) {
     return res.status(400).send(page("Paste a URL.", saved, null));
   }
+
   try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (host !== "example.edu" && !host.endsWith(".example.edu")) {
+      return res.status(400).send(page("That URL is not allowed.", saved, null));
+    }
     const response = await fetch(url);
     const body = await response.text();
     const card = { url, ...extract(body), status: response.status };
